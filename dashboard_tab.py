@@ -3,6 +3,7 @@ Dashboard Tab - Interactive Charts Dashboard
 """
 
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 
 def render_dashboard_tab():
@@ -106,6 +107,15 @@ def render_dashboard_chart(key, plot_data, index):
     current_df = st.session_state.get('working_data', None)
     current_filter_status = bool(st.session_state.get('filter_values'))
     
+    # Update chart with current filtered data if available
+    if current_df is not None and not current_df.empty:
+        # Recreate chart with current data
+        updated_fig = recreate_chart_with_current_data(current_df, plot_data)
+        if updated_fig:
+            plot_data['fig'] = updated_fig
+            plot_data['data_rows'] = len(current_df)
+            plot_data['last_updated'] = pd.Timestamp.now()
+    
     # Show premium update status
     if 'last_updated' in plot_data:
         update_time = plot_data['last_updated'].strftime('%H:%M:%S')
@@ -175,3 +185,35 @@ def render_dashboard_chart(key, plot_data, index):
             st.rerun()
     
     st.markdown("---")
+
+def recreate_chart_with_current_data(df, plot_data):
+    """Recreate chart with current filtered data"""
+    try:
+        from premium_visualization_tab import create_premium_chart
+        
+        chart_type = plot_data.get('type', 'scatter')
+        config = plot_data.get('config', {})
+        colors = plot_data.get('colors', ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'])
+        
+        # Recreate the chart with current data
+        updated_fig = create_premium_chart(df, chart_type, config, colors, 'modern')
+        
+        if updated_fig:
+            # Apply the same styling as the original
+            updated_fig.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color=colors[0],
+                title_font_color=colors[0],
+                title_font_size=18,
+                showlegend=True,
+                margin=dict(t=50, b=50, l=50, r=50),
+                height=500
+            )
+            
+            return updated_fig
+    except Exception as e:
+        pass
+    
+    # Return original figure if recreation fails
+    return plot_data.get('fig')

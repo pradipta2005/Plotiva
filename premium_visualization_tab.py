@@ -109,16 +109,17 @@ def render_premium_visualization_tab(df):
     
     # Create chart type selector with descriptions
     chart_cols = st.columns(5)
-    selected_chart = None
+    
+    # Initialize selected chart from session state or default to scatter
+    if 'selected_chart_type' not in st.session_state:
+        st.session_state.selected_chart_type = 'scatter'
     
     for i, (key, info) in enumerate(chart_options.items()):
         with chart_cols[i % 5]:
             if st.button(f"{info['name']}", key=f"chart_{key}", help=info['desc']):
-                selected_chart = key
+                st.session_state.selected_chart_type = key
     
-    # Default to scatter if none selected
-    if selected_chart is None:
-        selected_chart = 'scatter'
+    selected_chart = st.session_state.selected_chart_type
     
     st.markdown("---")
     
@@ -141,11 +142,14 @@ def render_premium_visualization_tab(df):
                 config['add_marginals'] = st.checkbox("Add marginal plots", value=False)
         
         elif selected_chart == 'line':
-            config['x_col'] = st.selectbox("X-axis", all_cols, key="line_x")
-            config['y_col'] = st.selectbox("Y-axis", numeric_cols, key="line_y")
-            config['color_col'] = st.selectbox("Group by", ['None'] + categorical_cols, key="line_color")
-            config['smooth'] = st.checkbox("Smooth line", value=True)
-            config['add_markers'] = st.checkbox("Show markers", value=True)
+            if numeric_cols:
+                config['x_col'] = st.selectbox("X-axis", all_cols, key="line_x")
+                config['y_col'] = st.selectbox("Y-axis", numeric_cols, key="line_y")
+                config['color_col'] = st.selectbox("Group by", ['None'] + categorical_cols, key="line_color")
+                config['smooth'] = st.checkbox("Smooth line", value=True)
+                config['add_markers'] = st.checkbox("Show markers", value=True)
+            else:
+                st.warning("Need numeric columns for line chart")
         
         elif selected_chart == 'bar':
             if categorical_cols and numeric_cols:
@@ -153,43 +157,60 @@ def render_premium_visualization_tab(df):
                 config['y_col'] = st.selectbox("Value", numeric_cols, key="bar_y")
                 config['color_col'] = st.selectbox("Color by", ['None'] + categorical_cols, key="bar_color")
                 config['orientation'] = st.selectbox("Orientation", ['vertical', 'horizontal'])
+            else:
+                st.warning("Need categorical and numeric columns for bar chart")
         
         elif selected_chart == 'histogram':
             if numeric_cols:
                 config['column'] = st.selectbox("Column", numeric_cols, key="hist_col")
                 config['bins'] = st.slider("Number of bins", 10, 100, 30)
                 config['show_kde'] = st.checkbox("Show density curve", value=True)
+            else:
+                st.warning("Need numeric columns for histogram")
         
         elif selected_chart == 'box':
             if categorical_cols and numeric_cols:
                 config['x_col'] = st.selectbox("Category", categorical_cols, key="box_x")
                 config['y_col'] = st.selectbox("Value", numeric_cols, key="box_y")
                 config['show_points'] = st.selectbox("Show points", ['outliers', 'all', 'none'])
+            else:
+                st.warning("Need categorical and numeric columns for box plot")
         
         elif selected_chart == 'heatmap':
-            st.info("Correlation heatmap of numeric columns")
-            config['cluster'] = st.checkbox("Cluster rows/columns", value=True)
-            config['annotate'] = st.checkbox("Show values", value=True)
+            if len(numeric_cols) > 1:
+                st.info("Correlation heatmap of numeric columns")
+                config['cluster'] = st.checkbox("Cluster rows/columns", value=True)
+                config['annotate'] = st.checkbox("Show values", value=True)
+            else:
+                st.warning("Need at least 2 numeric columns for heatmap")
         
         elif selected_chart == 'violin':
             if categorical_cols and numeric_cols:
                 config['x_col'] = st.selectbox("Category", categorical_cols, key="violin_x")
                 config['y_col'] = st.selectbox("Value", numeric_cols, key="violin_y")
+            else:
+                st.warning("Need categorical and numeric columns for violin plot")
         
         elif selected_chart == 'treemap':
             if categorical_cols and numeric_cols:
-                config['path_cols'] = st.multiselect("Hierarchy (path)", categorical_cols, default=categorical_cols[:2], key="treemap_path")
+                config['path_cols'] = st.multiselect("Hierarchy (path)", categorical_cols, default=categorical_cols[:2] if len(categorical_cols) >= 2 else categorical_cols[:1], key="treemap_path")
                 config['value_col'] = st.selectbox("Value", numeric_cols, key="treemap_value")
+            else:
+                st.warning("Need categorical and numeric columns for treemap")
         
         elif selected_chart == 'radar':
             if len(numeric_cols) >= 3:
-                config['metrics'] = st.multiselect("Metrics", numeric_cols, default=numeric_cols[:5], key="radar_metrics")
+                config['metrics'] = st.multiselect("Metrics", numeric_cols, default=numeric_cols[:min(5, len(numeric_cols))], key="radar_metrics")
                 config['group_col'] = st.selectbox("Group by", ['None'] + categorical_cols, key="radar_group")
+            else:
+                st.warning("Need at least 3 numeric columns for radar chart")
         
         elif selected_chart == 'sunburst':
             if categorical_cols and numeric_cols:
-                config['path_cols'] = st.multiselect("Hierarchy (path)", categorical_cols, default=categorical_cols[:2], key="sunburst_path")
+                config['path_cols'] = st.multiselect("Hierarchy (path)", categorical_cols, default=categorical_cols[:2] if len(categorical_cols) >= 2 else categorical_cols[:1], key="sunburst_path")
                 config['value_col'] = st.selectbox("Value", numeric_cols, key="sunburst_value")
+            else:
+                st.warning("Need categorical and numeric columns for sunburst")
     
     with col_chart:
         st.markdown("### 📊 Interactive Chart")
@@ -265,20 +286,23 @@ def render_premium_visualization_tab(df):
                 col_save, col_export, col_share = st.columns(3)
                 
                 with col_save:
-                    if st.button("💾 Add to Dashboard", key="save_chart"):
+                    if st.button("💾 Add to Dashboard", key=f"save_chart_{selected_chart}"):
                         chart_key = f"{selected_chart}_{int(time.time())}"
                         if 'dashboard_charts' not in st.session_state:
                             st.session_state.dashboard_charts = {}
                         
+                        # Store complete chart data with all required fields
                         st.session_state.dashboard_charts[chart_key] = {
                             'fig': fig,
                             'type': selected_chart,
                             'config': config,
                             'palette': palette,
                             'title': f"{chart_options[selected_chart]['name']}",
-                            'colors': colors
+                            'colors': colors,
+                            'last_updated': pd.Timestamp.now(),
+                            'data_rows': len(current_data)
                         }
-                        st.success("✨ Chart added to Dashboard tab!")
+                        st.success(f"✨ {chart_options[selected_chart]['name']} added to Dashboard!")
                         st.balloons()
                 
                 with col_export:
@@ -290,7 +314,47 @@ def render_premium_visualization_tab(df):
                         st.info("Share functionality - Premium feature")
             
             else:
-                st.error("Unable to create chart with current configuration")
+                # Show Add to Dashboard button even if chart creation failed
+                st.warning(f"Unable to create {chart_options[selected_chart]['name']} with current configuration")
+                
+                # Chart actions (still show for failed charts)
+                col_save, col_export, col_share = st.columns(3)
+                
+                with col_save:
+                    if st.button("💾 Add to Dashboard", key=f"save_chart_{selected_chart}_fallback"):
+                        # Create a placeholder chart for dashboard
+                        placeholder_fig = go.Figure()
+                        placeholder_fig.add_annotation(
+                            text=f"{chart_options[selected_chart]['name']}\nConfiguration needed",
+                            x=0.5, y=0.5, showarrow=False,
+                            font=dict(size=16, color=colors[0])
+                        )
+                        placeholder_fig.update_layout(
+                            title=f"{chart_options[selected_chart]['name']}",
+                            showlegend=False
+                        )
+                        
+                        chart_key = f"{selected_chart}_{int(time.time())}"
+                        if 'dashboard_charts' not in st.session_state:
+                            st.session_state.dashboard_charts = {}
+                        
+                        st.session_state.dashboard_charts[chart_key] = {
+                            'fig': placeholder_fig,
+                            'type': selected_chart,
+                            'config': config,
+                            'palette': palette,
+                            'title': f"{chart_options[selected_chart]['name']}",
+                            'colors': colors,
+                            'last_updated': pd.Timestamp.now(),
+                            'data_rows': len(current_data)
+                        }
+                        st.success(f"✨ {chart_options[selected_chart]['name']} placeholder added to Dashboard!")
+                
+                with col_export:
+                    st.button("📤 Export PNG", key="export_chart_disabled", disabled=True)
+                
+                with col_share:
+                    st.button("🔗 Share Chart", key="share_chart_disabled", disabled=True)
                 
         except Exception as e:
             st.error(f"Error creating chart: {str(e)}")
@@ -316,6 +380,7 @@ def create_premium_chart(df, chart_type, config, colors, style):
         # Ensure we're using the most current data
         if df.empty:
             return None
+            
         if chart_type == 'scatter':
             if 'x_col' in config and 'y_col' in config:
                 fig = px.scatter(
@@ -334,164 +399,196 @@ def create_premium_chart(df, chart_type, config, colors, style):
         
         elif chart_type == 'line':
             if 'x_col' in config and 'y_col' in config:
-                fig = px.line(
-                    df,
-                    x=config['x_col'],
-                    y=config['y_col'],
-                    color=config.get('color_col') if config.get('color_col') != 'None' else None,
-                    color_discrete_sequence=colors,
-                    title=f"{config['y_col']} over {config['x_col']}",
-                    line_shape='spline' if config.get('smooth') else 'linear',
-                    markers=config.get('add_markers', True)
-                )
-                return fig
+                try:
+                    fig = px.line(
+                        df,
+                        x=config['x_col'],
+                        y=config['y_col'],
+                        color=config.get('color_col') if config.get('color_col') != 'None' else None,
+                        color_discrete_sequence=colors,
+                        title=f"{config['y_col']} over {config['x_col']}",
+                        line_shape='spline' if config.get('smooth') else 'linear',
+                        markers=config.get('add_markers', True)
+                    )
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'bar':
             if 'x_col' in config and 'y_col' in config:
-                orientation = config.get('orientation', 'vertical')
-                if orientation == 'horizontal':
-                    fig = px.bar(
-                        df, y=config['x_col'], x=config['y_col'],
-                        color=config.get('color_col') if config.get('color_col') != 'None' else None,
-                        color_discrete_sequence=colors,
-                        title=f"{config['y_col']} by {config['x_col']}",
-                        orientation='h'
-                    )
-                else:
-                    fig = px.bar(
-                        df, x=config['x_col'], y=config['y_col'],
-                        color=config.get('color_col') if config.get('color_col') != 'None' else None,
-                        color_discrete_sequence=colors,
-                        title=f"{config['y_col']} by {config['x_col']}"
-                    )
-                return fig
+                try:
+                    orientation = config.get('orientation', 'vertical')
+                    if orientation == 'horizontal':
+                        fig = px.bar(
+                            df, y=config['x_col'], x=config['y_col'],
+                            color=config.get('color_col') if config.get('color_col') != 'None' else None,
+                            color_discrete_sequence=colors,
+                            title=f"{config['y_col']} by {config['x_col']}",
+                            orientation='h'
+                        )
+                    else:
+                        fig = px.bar(
+                            df, x=config['x_col'], y=config['y_col'],
+                            color=config.get('color_col') if config.get('color_col') != 'None' else None,
+                            color_discrete_sequence=colors,
+                            title=f"{config['y_col']} by {config['x_col']}"
+                        )
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'histogram':
             if 'column' in config:
-                fig = px.histogram(
-                    df,
-                    x=config['column'],
-                    nbins=config.get('bins', 30),
-                    color_discrete_sequence=colors,
-                    title=f"Distribution of {config['column']}"
-                )
-                
-                if config.get('show_kde'):
-                    # Add KDE curve
-                    from scipy import stats
-                    data = df[config['column']].dropna()
-                    if len(data) > 0:
-                        kde = stats.gaussian_kde(data)
-                        x_range = np.linspace(data.min(), data.max(), 100)
-                        kde_values = kde(x_range)
-                        
-                        # Scale KDE to match histogram
-                        kde_values = kde_values * len(data) * (data.max() - data.min()) / config.get('bins', 30)
-                        
-                        fig.add_trace(go.Scatter(
-                            x=x_range, y=kde_values,
-                            mode='lines',
-                            name='Density',
-                            line=dict(color=colors[1], width=3)
-                        ))
-                
-                return fig
+                try:
+                    fig = px.histogram(
+                        df,
+                        x=config['column'],
+                        nbins=config.get('bins', 30),
+                        color_discrete_sequence=colors,
+                        title=f"Distribution of {config['column']}"
+                    )
+                    
+                    if config.get('show_kde'):
+                        try:
+                            # Add KDE curve
+                            from scipy import stats
+                            data = df[config['column']].dropna()
+                            if len(data) > 0:
+                                kde = stats.gaussian_kde(data)
+                                x_range = np.linspace(data.min(), data.max(), 100)
+                                kde_values = kde(x_range)
+                                
+                                # Scale KDE to match histogram
+                                kde_values = kde_values * len(data) * (data.max() - data.min()) / config.get('bins', 30)
+                                
+                                fig.add_trace(go.Scatter(
+                                    x=x_range, y=kde_values,
+                                    mode='lines',
+                                    name='Density',
+                                    line=dict(color=colors[1], width=3)
+                                ))
+                        except Exception:
+                            pass  # Skip KDE if it fails
+                    
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'box':
             if 'x_col' in config and 'y_col' in config:
-                fig = px.box(
-                    df,
-                    x=config['x_col'],
-                    y=config['y_col'],
-                    color_discrete_sequence=colors,
-                    title=f"{config['y_col']} distribution by {config['x_col']}",
-                    points=config.get('show_points', 'outliers')
-                )
-                return fig
+                try:
+                    fig = px.box(
+                        df,
+                        x=config['x_col'],
+                        y=config['y_col'],
+                        color_discrete_sequence=colors,
+                        title=f"{config['y_col']} distribution by {config['x_col']}",
+                        points=config.get('show_points', 'outliers')
+                    )
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'heatmap':
-            numeric_cols = df.select_dtypes(include=[np.number]).columns
-            if len(numeric_cols) > 1:
-                corr_matrix = df[numeric_cols].corr()
-                
-                fig = px.imshow(
-                    corr_matrix,
-                    text_auto=config.get('annotate', True),
-                    aspect="auto",
-                    color_continuous_scale='RdBu_r',
-                    title="Correlation Heatmap"
-                )
-                return fig
+            try:
+                numeric_cols = df.select_dtypes(include=[np.number]).columns
+                if len(numeric_cols) > 1:
+                    corr_matrix = df[numeric_cols].corr()
+                    
+                    fig = px.imshow(
+                        corr_matrix,
+                        text_auto=config.get('annotate', True),
+                        aspect="auto",
+                        color_continuous_scale='RdBu_r',
+                        title="Correlation Heatmap"
+                    )
+                    return fig
+            except Exception:
+                return None
         
         elif chart_type == 'violin':
             if 'x_col' in config and 'y_col' in config:
-                fig = px.violin(
-                    df,
-                    x=config['x_col'],
-                    y=config['y_col'],
-                    color_discrete_sequence=colors,
-                    title=f"{config['y_col']} distribution by {config['x_col']}",
-                    box=True
-                )
-                return fig
+                try:
+                    fig = px.violin(
+                        df,
+                        x=config['x_col'],
+                        y=config['y_col'],
+                        color_discrete_sequence=colors,
+                        title=f"{config['y_col']} distribution by {config['x_col']}",
+                        box=True
+                    )
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'treemap':
             if 'path_cols' in config and 'value_col' in config and config['path_cols']:
-                fig = px.treemap(
-                    df,
-                    path=config['path_cols'],
-                    values=config['value_col'],
-                    color_discrete_sequence=colors,
-                    title=f"Treemap: {' → '.join(config['path_cols'])}"
-                )
-                return fig
+                try:
+                    fig = px.treemap(
+                        df,
+                        path=config['path_cols'],
+                        values=config['value_col'],
+                        color_discrete_sequence=colors,
+                        title=f"Treemap: {' → '.join(config['path_cols'])}"
+                    )
+                    return fig
+                except Exception:
+                    # Fallback for treemap issues
+                    return None
         
         elif chart_type == 'radar':
-            if 'metrics' in config and len(config['metrics']) >= 3:
-                metrics = config['metrics']
-                group_col = config.get('group_col')
-                
-                fig = go.Figure()
-                
-                if group_col and group_col != 'None':
-                    groups = df[group_col].unique()[:5]
-                    for i, group in enumerate(groups):
-                        group_data = df[df[group_col] == group]
-                        values = [group_data[metric].mean() for metric in metrics]
-                        
+            if 'metrics' in config and config['metrics'] and len(config['metrics']) >= 3:
+                try:
+                    metrics = config['metrics']
+                    group_col = config.get('group_col')
+                    
+                    fig = go.Figure()
+                    
+                    if group_col and group_col != 'None':
+                        groups = df[group_col].unique()[:5]
+                        for i, group in enumerate(groups):
+                            group_data = df[df[group_col] == group]
+                            values = [group_data[metric].mean() for metric in metrics]
+                            
+                            fig.add_trace(go.Scatterpolar(
+                                r=values + [values[0]],
+                                theta=metrics + [metrics[0]],
+                                fill='toself',
+                                name=str(group),
+                                line_color=colors[i % len(colors)]
+                            ))
+                    else:
+                        values = [df[metric].mean() for metric in metrics]
                         fig.add_trace(go.Scatterpolar(
                             r=values + [values[0]],
                             theta=metrics + [metrics[0]],
                             fill='toself',
-                            name=str(group),
-                            line_color=colors[i % len(colors)]
+                            name='Average',
+                            line_color=colors[0]
                         ))
-                else:
-                    values = [df[metric].mean() for metric in metrics]
-                    fig.add_trace(go.Scatterpolar(
-                        r=values + [values[0]],
-                        theta=metrics + [metrics[0]],
-                        fill='toself',
-                        name='Average',
-                        line_color=colors[0]
-                    ))
-                
-                fig.update_layout(
-                    polar=dict(radialaxis=dict(visible=True)),
-                    title="Radar Chart"
-                )
-                return fig
+                    
+                    fig.update_layout(
+                        polar=dict(radialaxis=dict(visible=True)),
+                        title="Radar Chart"
+                    )
+                    return fig
+                except Exception:
+                    return None
         
         elif chart_type == 'sunburst':
             if 'path_cols' in config and 'value_col' in config and config['path_cols']:
-                fig = px.sunburst(
-                    df,
-                    path=config['path_cols'],
-                    values=config['value_col'],
-                    color_discrete_sequence=colors,
-                    title=f"Sunburst: {' → '.join(config['path_cols'])}"
-                )
-                return fig
+                try:
+                    fig = px.sunburst(
+                        df,
+                        path=config['path_cols'],
+                        values=config['value_col'],
+                        color_discrete_sequence=colors,
+                        title=f"Sunburst: {' → '.join(config['path_cols'])}"
+                    )
+                    return fig
+                except Exception:
+                    # Fallback for sunburst issues
+                    return None
         
         return None
         
