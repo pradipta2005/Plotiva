@@ -31,15 +31,6 @@ Plotiva is a **next-generation, enterprise-grade data visualization platform** t
 
 <div align="center">
 
-### 📈 **Platform Metrics**
-
-| Metric | Value |
-|--------|-------|
-| 🌍 **Global Users** | 10,000+ |
-| 📊 **Charts Created** | 500,000+ |
-| 🏢 **Enterprise Clients** | 50+ |
-| ⚡ **Processing Speed** | <2s avg |
-| 🔒 **Uptime** | 99.9% |
 
 </div>
 
