@@ -341,14 +341,13 @@ python -m venv plotiva-env
 source plotiva-env/bin/activate  # Windows: plotiva-env\Scripts\activate
 
 # Install Dependencies
-pip install -r requirements_premium.txt
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 
 # Run Tests
 pytest tests/ --cov=plotiva
 
 # Start Development Server
-streamlit run main_premium.py --server.runOnSave=true
+streamlit run main.py --server.runOnSave=true
 ```
 
 ### 📝 **Contribution Guidelines**
