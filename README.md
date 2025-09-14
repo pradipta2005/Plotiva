@@ -298,22 +298,6 @@ docker run -p 8501:8501 plotiva-enterprise
 - [ ] **Governance**: Data lineage, compliance tools
 - [ ] **Performance**: 10x speed improvements
 
----
-
-## 🏆 **Recognition & Awards**
-
-<div align="center">
-
-| Award | Organization | Year |
-|-------|--------------|------|
-| 🥇 **Community Choice Award** | Streamlit | 2024 |
-| 🌟 **Top 10 Data Viz Tools** | DataScience.com | 2024 |
-| 📊 **Best Open Source Platform** | Analytics Weekly | 2024 |
-| 🚀 **Innovation Award** | TechCrunch Disrupt | 2024 |
-
-*"Plotiva represents the next evolution in data visualization platforms"* - **TechCrunch**
-
-</div>
 
 ---
 
@@ -375,9 +359,9 @@ streamlit run main.py --server.runOnSave=true
 
 </div>
 
-### 🌐 **Connect With Us**
+### 🌐 **Connect With Me**
 
-- **🌍 Website**: [https://plotiva.streamlit.app/](https://plotiva.streamlit.app/)
+- **🌍 Website**: [https://plotiva.streamlit.app/](https://pradipta2005.github.io/My_Portfolio/)
 - **📧 Enterprise**: enterprise@plotiva.com
 - **💼 LinkedIn**: [Plotiva Official](https://linkedin.com/company/plotiva)
 - **🐦 Twitter**: [@PlotivaHQ](https://twitter.com/plotivahq)
