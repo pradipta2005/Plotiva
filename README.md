@@ -15,7 +15,7 @@
 
 [🌟 **Experience Live Demo**](https://plotiva.streamlit.app/) • [📊 **View Gallery**](#gallery) • [🎯 **Explore Features**](#features) • [💼 **Enterprise Solutions**](#enterprise)
 
-![Plotiva Dashboard Preview](https://via.placeholder.com/800x400/667eea/ffffff?text=Plotiva+Dashboard+Preview)
+
 
 </div>
 
@@ -247,8 +247,8 @@ git clone https://github.com/pradipta2005/plotiva.git
 cd plotiva
 
 # Production Setup
-pip install -r requirements_premium.txt
-streamlit run main_premium.py --server.port=8501
+pip install -r requirements.txt
+streamlit run main.py --server.port=8501
 
 # Docker Deployment
 docker build -t plotiva-enterprise .
