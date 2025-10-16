@@ -317,7 +317,7 @@ docker run -p 8501:8501 plotiva-enterprise
 
 ```bash
 # Fork & Clone
-git clone https://github.com/yourusername/plotiva.git
+git clone https://github.com/pradipta2005/plotiva.git
 cd plotiva
 
 # Environment Setup
@@ -344,30 +344,7 @@ streamlit run main.py --server.runOnSave=true
 
 ---
 
-## 📞 **Enterprise Support**
 
-<div align="center">
-
-### 🌟 **Get Premium Support**
-
-| Channel | Response Time | Availability |
-|---------|---------------|--------------|
-| 📧 **Enterprise Email** | <4 hours | 24/7 |
-| 💬 **Priority Chat** | <1 hour | Business hours |
-| 📞 **Phone Support** | Immediate | Enterprise only |
-| 🎓 **Training** | Scheduled | Custom |
-
-</div>
-
-### 🌐 **Connect With Me**
-
-- **🌍 Website**: [https://plotiva.streamlit.app/](https://pradipta2005.github.io/My_Portfolio/)
-- **📧 Enterprise**: enterprise@plotiva.com
-- **💼 LinkedIn**: [Plotiva Official](https://linkedin.com/company/plotiva)
-- **🐦 Twitter**: [@PlotivaHQ](https://twitter.com/plotivahq)
-- **📺 YouTube**: [Plotiva Tutorials](https://youtube.com/plotiva)
-
----
 
 ## 🙏 **Acknowledgments**
 
